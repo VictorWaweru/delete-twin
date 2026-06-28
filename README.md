@@ -1,6 +1,6 @@
-# 🖼️ Image Duplicate Scanner v2.2
+# 🥋 Photo Ninja v2.2
 
-**Professional Image Duplicate Detection Tool**  
+**Professional Photo Duplicate Finder Tool**  
 Built by **GamEGanG** | © 2026 - All Rights Reserved
 
 ---
@@ -195,7 +195,7 @@ pip install Pillow
 
 ## 📦 File Structure
 ```
-Image Duplicate Scanner/
+Photo Ninja/
 │
 ├── delete.py                      # Main application (v2.2)
 ├── dist/
@@ -219,28 +219,18 @@ Image Duplicate Scanner/
 
 ## 📜 Version History
 
-### **v2.2 (Current) - 2026-06-28** 🎨
+### **v2.2 (Current) - 2026-06-29** 🎨
 - ✨ **NEW: Dark/Light Theme System**
   - Toggle between themes in View menu
   - Persistent theme preference
   - Fully themed UI elements
 - Added ThemeManager class
 - Enhanced visual customization
-
-### **v2.1.1 - 2026-06-28** 🐛
-- Fixed syntax errors
-- Removed console window on launch
-- Rebuilt standalone executable
-- Better window management
-
-### **v2.1 - 2026-06-28** 🚀
-- Fixed window display issues
-- Added missing GUI imports
-- Improved window positioning
-- Better error handling
+- **Renamed to Photo Ninja** 🥋
+- Optimized standalone executable
 
 ### **v2.0 - Initial Release**
-- Full duplicate detection
+- Full duplicate detection system
 - PyQt5 GUI interface
 - Delete/Move/Export functions
 

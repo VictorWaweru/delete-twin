@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Image Duplicate Scanner - Professional Edition
+Photo Ninja - Professional Edition
 Version: 2.1.1
 Built by GamEGanG
 FIXES: Window management, GUI import errors, console window hiding
@@ -204,7 +204,7 @@ class MainWindow(QMainWindow):
         self.apply_theme()
         
     def setup_ui(self):
-        self.setWindowTitle("🖼️ Image Duplicate Scanner")
+        self.setWindowTitle("🥋 Photo Ninja")
         self.setGeometry(200, 200, 900, 650)
         
         # Center window on screen
@@ -232,7 +232,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
         
         # Header
-        header = QLabel("🖼️ Image Duplicate Scanner")
+        header = QLabel("🥋 Photo Ninja")
         header.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50; padding: 5px;")
         layout.addWidget(header)
         
@@ -966,8 +966,8 @@ class MainWindow(QMainWindow):
     def show_about(self):
         QMessageBox.about(
             self,
-            "About Image Duplicate Scanner",
-            "🖼️ Image Duplicate Scanner\n\n"
+            "About Photo Ninja",
+            "🥋 Photo Ninja\n\n"
             "Version: 2.1.1\n"
             "Built by GamEGanG\n\n"
             "A simple tool to find and remove duplicate images.\n\n"
@@ -982,7 +982,7 @@ class MainWindow(QMainWindow):
     
     def show_help(self):
         help_text = """
-        📖 How to Use Image Duplicate Scanner
+        📖 How to Use Photo Ninja
         
         1. 📁 Select a Folder
            • Click "Browse..." or use File > Open Folder
@@ -1053,7 +1053,7 @@ def main():
     try:
         app = QApplication(sys.argv)
         app.setStyle('Fusion')
-        app.setApplicationName("Image Duplicate Scanner")
+        app.setApplicationName("Photo Ninja")
         
         # Set application icon
         try:

@@ -1,4 +1,4 @@
-# Image Duplicate Scanner - Version History
+# Photo Ninja - Version History
 
 ## Version 2.2 (Current) - 2026-06-28
 - **NEW: Dark/Light Theme System** 🎨
@@ -9,6 +9,7 @@
   - Theme preference saved and persists across sessions
 - Added theme configuration file (`theme_config.txt`)
 - Fully themed UI elements (buttons, menus, tree view, status bar)
+- Application renamed to **Photo Ninja**
 - Backup file: `versions/delete_v2.2.py`
 
 ## Version 2.1.1 - 2026-06-28
@@ -43,7 +44,7 @@
 
 ## File Structure
 ```
-double copy/
+Photo Ninja/
 ├── delete.py                    # Current version (v2.2)
 ├── dist/ImageDuplicateScanner.exe  # Standalone executable
 ├── theme_config.txt             # Theme preference storage
