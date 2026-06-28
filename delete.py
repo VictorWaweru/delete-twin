@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Image Duplicate Scanner - Professional Edition
-FIXED: Window stays open after scan
+Version: 2.1
+FIXES: Window management, GUI import errors, console window hiding
 """
 
 import os
@@ -858,14 +859,15 @@ class MainWindow(QMainWindow):
             self,
             "About Image Duplicate Scanner",
             "🖼️ Image Duplicate Scanner\n\n"
-            "Version: 2.0\n\n"
+            "Version: 2.1\n\n"
             "A simple tool to find and remove duplicate images.\n\n"
             "Features:\n"
             "• Fast scanning with image comparison\n"
             "• Delete or move duplicates\n"
             "• Export detailed reports\n"
-            "• User-friendly interface\n\n"
-            "© 2024 - All Rights Reserved"
+            "• User-friendly interface\n"
+            "• Fixed window management and GUI imports\n\n"
+            "© 2026 - All Rights Reserved"
         )
     
     def show_help(self):
