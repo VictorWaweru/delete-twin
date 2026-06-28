@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Image Duplicate Scanner - Professional Edition
-Version: 2.1
+Version: 2.1.1
+Built by GamEGanG
 FIXES: Window management, GUI import errors, console window hiding
 """
 
@@ -97,13 +98,110 @@ class ScannerThread(QThread):
         except Exception as e:
             self.error.emit(str(e))
 
+class ThemeManager:
+    """Manages light and dark themes"""
+    
+    LIGHT_THEME = {
+        "name": "Light",
+        "bg_color": "#ffffff",
+        "text_color": "#2c3e50",
+        "header_bg": "#ecf0f1",
+        "button_bg": "#3498db",
+        "button_hover": "#2980b9",
+        "danger_bg": "#e74c3c",
+        "danger_hover": "#c0392b",
+        "success_bg": "#27ae60",
+        "success_hover": "#229954",
+        "warning_bg": "#e67e22",
+        "warning_hover": "#d35400",
+        "info_bg": "#9b59b6",
+        "info_hover": "#8e44ad",
+        "border_color": "#bdc3c7",
+        "tree_bg": "#ffffff",
+        "tree_selected": "#3498db",
+        "statusbar_bg": "#ecf0f1"
+    }
+    
+    DARK_THEME = {
+        "name": "Dark",
+        "bg_color": "#1e1e1e",
+        "text_color": "#e0e0e0",
+        "header_bg": "#2d2d2d",
+        "button_bg": "#0d47a1",
+        "button_hover": "#1565c0",
+        "danger_bg": "#c62828",
+        "danger_hover": "#d32f2f",
+        "success_bg": "#1b5e20",
+        "success_hover": "#2e7d32",
+        "warning_bg": "#e65100",
+        "warning_hover": "#ef6c00",
+        "info_bg": "#6a1b9a",
+        "info_hover": "#7b1fa2",
+        "border_color": "#424242",
+        "tree_bg": "#2d2d2d",
+        "tree_selected": "#0d47a1",
+        "statusbar_bg": "#2d2d2d"
+    }
+    
+    def __init__(self):
+        self.current_theme = self.LIGHT_THEME
+        self.load_theme()
+    
+    def load_theme(self):
+        """Load saved theme preference"""
+        theme_file = os.path.join(os.path.dirname(__file__), "theme_config.txt")
+        try:
+            if os.path.exists(theme_file):
+                with open(theme_file, 'r') as f:
+                    theme_name = f.read().strip()
+                    if theme_name == "Dark":
+                        self.current_theme = self.DARK_THEME
+                    else:
+                        self.current_theme = self.LIGHT_THEME
+        except:
+            pass
+    
+    def save_theme(self, theme_name):
+        """Save theme preference"""
+        theme_file = os.path.join(os.path.dirname(__file__), "theme_config.txt")
+        try:
+            with open(theme_file, 'w') as f:
+                f.write(theme_name)
+        except:
+            pass
+    
+    def get_stylesheet(self, theme):
+        """Generate stylesheet for given theme"""
+        t = theme
+        return f"""
+            QMainWindow, QDialog {{ background-color: {t['bg_color']}; color: {t['text_color']}; }}
+            QLabel {{ color: {t['text_color']}; }}
+            QLineEdit {{ background-color: {t['header_bg']}; color: {t['text_color']}; border: 1px solid {t['border_color']}; padding: 5px; border-radius: 3px; }}
+            QPushButton {{ background-color: {t['button_bg']}; color: white; padding: 5px 15px; border-radius: 4px; font-weight: bold; border: none; }}
+            QPushButton:hover {{ background-color: {t['button_hover']}; }}
+            QPushButton:pressed {{ background-color: {t['button_hover']}; }}
+            QGroupBox {{ color: {t['text_color']}; border: 1px solid {t['border_color']}; border-radius: 4px; margin-top: 10px; padding-top: 10px; }}
+            QGroupBox::title {{ subcontrol-origin: margin; left: 10px; padding: 0 3px 0 3px; }}
+            QTreeWidget {{ background-color: {t['tree_bg']}; color: {t['text_color']}; border: 1px solid {t['border_color']}; alternate-background-color: {t['header_bg']}; }}
+            QTreeWidget::item:selected {{ background-color: {t['tree_selected']}; color: white; }}
+            QProgressBar {{ background-color: {t['header_bg']}; color: {t['text_color']}; border: 2px solid {t['border_color']}; border-radius: 5px; text-align: center; height: 25px; font-weight: bold; }}
+            QProgressBar::chunk {{ background-color: {t['success_bg']}; border-radius: 5px; }}
+            QStatusBar {{ background-color: {t['statusbar_bg']}; color: {t['text_color']}; border-top: 1px solid {t['border_color']}; }}
+            QMenuBar {{ background-color: {t['header_bg']}; color: {t['text_color']}; }}
+            QMenuBar::item:selected {{ background-color: {t['button_bg']}; }}
+            QMenu {{ background-color: {t['header_bg']}; color: {t['text_color']}; }}
+            QMenu::item:selected {{ background-color: {t['button_bg']}; }}
+        """
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.duplicates = {}
         self.scanner = None
+        self.theme_manager = ThemeManager()
         self.setup_ui()
         self.setup_menubar()
+        self.apply_theme()
         
     def setup_ui(self):
         self.setWindowTitle("🖼️ Image Duplicate Scanner")
@@ -387,6 +485,17 @@ class MainWindow(QMainWindow):
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
+        
+        # View menu (Theme)
+        view_menu = menubar.addMenu("&View")
+        
+        light_theme_action = QAction("☀️ Light Mode", self)
+        light_theme_action.triggered.connect(lambda: self.switch_theme("Light"))
+        view_menu.addAction(light_theme_action)
+        
+        dark_theme_action = QAction("🌙 Dark Mode", self)
+        dark_theme_action.triggered.connect(lambda: self.switch_theme("Dark"))
+        view_menu.addAction(dark_theme_action)
         
         # Help menu
         help_menu = menubar.addMenu("&Help")
@@ -859,7 +968,8 @@ class MainWindow(QMainWindow):
             self,
             "About Image Duplicate Scanner",
             "🖼️ Image Duplicate Scanner\n\n"
-            "Version: 2.1\n\n"
+            "Version: 2.1.1\n"
+            "Built by GamEGanG\n\n"
             "A simple tool to find and remove duplicate images.\n\n"
             "Features:\n"
             "• Fast scanning with image comparison\n"
@@ -867,7 +977,7 @@ class MainWindow(QMainWindow):
             "• Export detailed reports\n"
             "• User-friendly interface\n"
             "• Fixed window management and GUI imports\n\n"
-            "© 2026 - All Rights Reserved"
+            "© 2026 GamEGanG - All Rights Reserved"
         )
     
     def show_help(self):
@@ -899,6 +1009,27 @@ class MainWindow(QMainWindow):
         """
         
         QMessageBox.information(self, "📖 Help", help_text)
+    
+    def apply_theme(self):
+        """Apply the current theme to the window"""
+        stylesheet = self.theme_manager.get_stylesheet(self.theme_manager.current_theme)
+        self.setStyleSheet(stylesheet)
+    
+    def switch_theme(self, theme_name):
+        """Switch between light and dark themes"""
+        if theme_name == "Dark":
+            self.theme_manager.current_theme = self.theme_manager.DARK_THEME
+        else:
+            self.theme_manager.current_theme = self.theme_manager.LIGHT_THEME
+        
+        self.theme_manager.save_theme(theme_name)
+        self.apply_theme()
+        
+        QMessageBox.information(
+            self,
+            "Theme Changed",
+            f"✅ Switched to {theme_name} Mode\n\nThe theme will persist when you restart the app."
+        )
     
     def closeEvent(self, event):
         """Handle window close event - properly clean up"""
