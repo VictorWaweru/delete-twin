@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Photo Ninja - Professional Edition
-Version: 2.1.1
+Version: 2.3
 Built by GamEGanG
-FIXES: Window management, GUI import errors, console window hiding
+NEW: 0-byte file detection and removal
 """
 
 import os
@@ -41,11 +41,13 @@ class ScannerThread(QThread):
     status = pyqtSignal(str)
     done = pyqtSignal(dict)
     error = pyqtSignal(str)
+    zero_byte_files = pyqtSignal(list)
     
-    def __init__(self, folder):
+    def __init__(self, folder, detect_zero_byte=True):
         super().__init__()
         self.folder = folder
         self.running = True
+        self.detect_zero_byte = detect_zero_byte
         
     def stop(self):
         self.running = False
@@ -54,6 +56,7 @@ class ScannerThread(QThread):
         try:
             self.status.emit("🔍 Scanning for images...")
             files = []
+            zero_byte_files = []
             
             # Walk through folder
             for root, dirs, names in os.walk(self.folder):
@@ -62,14 +65,29 @@ class ScannerThread(QThread):
                 for name in names:
                     if not self.running:
                         return
+                    filepath = os.path.join(root, name)
                     ext = os.path.splitext(name)[1].lower()
+                    
+                    # Check for image files
                     if ext in {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.ico', '.svg'}:
-                        files.append(os.path.join(root, name))
+                        try:
+                            size = os.path.getsize(filepath)
+                            if size == 0 and self.detect_zero_byte:
+                                zero_byte_files.append(filepath)
+                                self.zero_byte_files.emit(zero_byte_files)
+                            else:
+                                files.append(filepath)
+                        except:
+                            continue
             
-            if not files:
+            if not files and not zero_byte_files:
                 self.status.emit("😕 No images found!")
                 self.done.emit({})
                 return
+            
+            # Report zero-byte files
+            if zero_byte_files:
+                self.status.emit(f"⚠️ Found {len(zero_byte_files)} zero-byte files")
             
             self.status.emit(f"📸 Found {len(files)} images. Checking for duplicates...")
             hashes = defaultdict(list)
@@ -92,6 +110,11 @@ class ScannerThread(QThread):
                 self.progress.emit(progress, f"🔄 Processing {os.path.basename(filepath)}")
             
             duplicates = {h: paths for h, paths in hashes.items() if len(paths) > 1}
+            
+            # Add zero-byte files to results
+            if zero_byte_files:
+                duplicates["ZERO_BYTE_FILES"] = zero_byte_files
+            
             self.status.emit(f"✅ Found {len(duplicates)} duplicate groups")
             self.done.emit(duplicates)
             
@@ -199,20 +222,21 @@ class MainWindow(QMainWindow):
         self.duplicates = {}
         self.scanner = None
         self.theme_manager = ThemeManager()
+        self.zero_byte_files = []
         self.setup_ui()
         self.setup_menubar()
         self.apply_theme()
         
     def setup_ui(self):
-        self.setWindowTitle("🥋 Photo Ninja")
-        self.setGeometry(200, 200, 900, 650)
+        self.setWindowTitle("🥋 Photo Ninja - Duplicate & Empty File Cleaner")
+        self.setGeometry(200, 200, 950, 700)
         
         # Center window on screen
         from PyQt5.QtWidgets import QDesktopWidget
         desktop = QDesktopWidget()
         screen_rect = desktop.screenGeometry()
-        x = (screen_rect.width() - 900) // 2
-        y = (screen_rect.height() - 650) // 2
+        x = (screen_rect.width() - 950) // 2
+        y = (screen_rect.height() - 700) // 2
         self.move(x, y)
         
         # Make window stay on top and visible
@@ -233,8 +257,13 @@ class MainWindow(QMainWindow):
         
         # Header
         header = QLabel("🥋 Photo Ninja")
-        header.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50; padding: 5px;")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50; padding: 10px;")
         layout.addWidget(header)
+        
+        # Subtitle
+        subtitle = QLabel("⚡ Detect duplicates | 🔍 Find zero-byte files | 🗑️ Clean your photo collection")
+        subtitle.setStyleSheet("font-size: 12px; color: #7f8c8d; padding: 0 0 10px 10px;")
+        layout.addWidget(subtitle)
         
         # Folder selection
         folder_group = QGroupBox("📁 Select Folder")
@@ -313,6 +342,13 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.stop_btn)
         
         button_layout.addStretch()
+        
+        # Options
+        self.detect_zero_byte_cb = QCheckBox("🗑️ Detect Zero-Byte Files")
+        self.detect_zero_byte_cb.setChecked(True)
+        self.detect_zero_byte_cb.setToolTip("Find and report empty (0-byte) image files")
+        button_layout.addWidget(self.detect_zero_byte_cb)
+        
         control_layout.addLayout(button_layout)
         
         # Progress
@@ -395,6 +431,29 @@ class MainWindow(QMainWindow):
             }
         """)
         action_layout.addWidget(self.delete_btn)
+        
+        self.delete_zero_btn = QPushButton("🗑️ Delete Zero-Byte Files")
+        self.delete_zero_btn.clicked.connect(self.delete_zero_byte_files)
+        self.delete_zero_btn.setEnabled(False)
+        self.delete_zero_btn.setStyleSheet("""
+            QPushButton:enabled {
+                background-color: #e74c3c;
+                color: white;
+                padding: 8px 15px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:enabled:hover {
+                background-color: #c0392b;
+            }
+            QPushButton:disabled {
+                background-color: #bdc3c7;
+                color: #7f8c8d;
+                padding: 8px 15px;
+                border-radius: 4px;
+            }
+        """)
+        action_layout.addWidget(self.delete_zero_btn)
         
         self.move_btn = QPushButton("📦 Move Duplicates")
         self.move_btn.clicked.connect(self.move_duplicates)
@@ -497,6 +556,13 @@ class MainWindow(QMainWindow):
         dark_theme_action.triggered.connect(lambda: self.switch_theme("Dark"))
         view_menu.addAction(dark_theme_action)
         
+        # Tools menu
+        tools_menu = menubar.addMenu("&Tools")
+        
+        clean_zero_action = QAction("🗑️ Clean Zero-Byte Files", self)
+        clean_zero_action.triggered.connect(self.clean_zero_byte_files)
+        tools_menu.addAction(clean_zero_action)
+        
         # Help menu
         help_menu = menubar.addMenu("&Help")
         
@@ -524,12 +590,20 @@ class MainWindow(QMainWindow):
             # Quick count
             try:
                 count = 0
+                zero_count = 0
                 for root, dirs, files in os.walk(folder):
                     for f in files:
                         if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
-                            count += 1
-                if count > 0:
-                    self.status_label.setText(f"📸 Found {count} images in this folder")
+                            filepath = os.path.join(root, f)
+                            try:
+                                if os.path.getsize(filepath) == 0:
+                                    zero_count += 1
+                                else:
+                                    count += 1
+                            except:
+                                pass
+                if count > 0 or zero_count > 0:
+                    self.status_label.setText(f"📸 Found {count} images, {zero_count} zero-byte files in this folder")
             except:
                 pass
     
@@ -546,17 +620,20 @@ class MainWindow(QMainWindow):
         # Clear previous results
         self.results_tree.clear()
         self.duplicates = {}
+        self.zero_byte_files = []
         self.delete_btn.setEnabled(False)
+        self.delete_zero_btn.setEnabled(False)
         self.move_btn.setEnabled(False)
         self.export_btn.setEnabled(False)
         self.summary_label.setText("🔄 Scanning in progress...")
         
         # Create and start scanner thread
-        self.scanner = ScannerThread(folder)
+        self.scanner = ScannerThread(folder, self.detect_zero_byte_cb.isChecked())
         self.scanner.progress.connect(self.update_progress)
         self.scanner.status.connect(self.update_status)
         self.scanner.done.connect(self.scan_finished)
         self.scanner.error.connect(self.scan_error)
+        self.scanner.zero_byte_files.connect(self.update_zero_byte_files)
         
         self.scan_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
@@ -578,7 +655,7 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.Yes:
                 self.scanner.stop()
-                self.scanner.wait()  # Wait for thread to finish
+                self.scanner.wait()
                 self.status_label.setText("⏹️ Scan stopped by user")
                 self.status_bar.showMessage("⏹️ Stopped")
                 self.scan_btn.setEnabled(True)
@@ -595,6 +672,9 @@ class MainWindow(QMainWindow):
         self.status_label.setText(status)
         self.status_bar.showMessage(status)
     
+    def update_zero_byte_files(self, files):
+        self.zero_byte_files = files
+    
     def scan_finished(self, duplicates):
         """Handle scan completion - KEEP WINDOW OPEN"""
         try:
@@ -603,8 +683,15 @@ class MainWindow(QMainWindow):
             self.stop_btn.setEnabled(False)
             self.status_progress.setVisible(False)
             
-            if duplicates:
-                total = sum(len(paths) - 1 for paths in duplicates.values())
+            # Check for zero-byte files
+            zero_byte_files = []
+            if "ZERO_BYTE_FILES" in duplicates:
+                zero_byte_files = duplicates["ZERO_BYTE_FILES"]
+                del duplicates["ZERO_BYTE_FILES"]
+                self.zero_byte_files = zero_byte_files
+            
+            if duplicates or zero_byte_files:
+                total_duplicates = sum(len(paths) - 1 for paths in duplicates.values())
                 total_size = 0
                 for paths in duplicates.values():
                     for path in paths[1:]:
@@ -613,34 +700,44 @@ class MainWindow(QMainWindow):
                         except:
                             pass
                 
-                self.summary_label.setText(
-                    f"🎉 Found {len(duplicates)} duplicate groups ({total} files, {total_size / (1024**2):.1f} MB)"
-                )
-                self.status_label.setText(f"✅ Complete! Found {total} duplicate files")
-                self.status_bar.showMessage(f"✅ Complete! Found {total} duplicate files")
+                summary_text = f"🎉 Found {len(duplicates)} duplicate groups ({total_duplicates} files, {total_size / (1024**2):.1f} MB)"
+                if zero_byte_files:
+                    summary_text += f"\n⚠️ Found {len(zero_byte_files)} zero-byte files"
+                
+                self.summary_label.setText(summary_text)
+                self.status_label.setText(f"✅ Complete! Found {len(duplicates)} duplicate groups")
+                self.status_bar.showMessage(f"✅ Complete! Found {len(duplicates)} duplicate groups")
+                
                 self.delete_btn.setEnabled(True)
                 self.move_btn.setEnabled(True)
                 self.export_btn.setEnabled(True)
-                self.display_results()
+                if zero_byte_files:
+                    self.delete_zero_btn.setEnabled(True)
                 
-                # Show success message - WINDOW STAYS OPEN
+                self.display_results(duplicates, zero_byte_files)
+                
+                # Show success message
+                msg = f"Found {len(duplicates)} duplicate groups!\n"
+                msg += f"Total duplicate files: {total_duplicates}\n"
+                msg += f"Space that can be freed: {total_size / (1024**2):.1f} MB"
+                if zero_byte_files:
+                    msg += f"\n\n⚠️ Found {len(zero_byte_files)} zero-byte files that can be safely deleted."
+                msg += "\n\nReview the results and choose an action below."
+                
                 QMessageBox.information(
                     self,
                     "✅ Scan Complete",
-                    f"Found {len(duplicates)} duplicate groups!\n"
-                    f"Total duplicate files: {total}\n"
-                    f"Space that can be freed: {total_size / (1024**2):.1f} MB\n\n"
-                    "Review the results and choose an action below."
+                    msg
                 )
             else:
-                self.summary_label.setText("✅ No duplicates found! Your folder is clean.")
+                self.summary_label.setText("✅ No duplicates or zero-byte files found! Your folder is clean.")
                 self.status_label.setText("✅ No duplicates found")
                 self.status_bar.showMessage("✅ No duplicates found")
                 
                 QMessageBox.information(
                     self,
                     "✅ Clean Folder",
-                    "No duplicate images found in this folder!\n"
+                    "No duplicate images or zero-byte files found in this folder!\n"
                     "Your photo collection is already organized."
                 )
             
@@ -674,13 +771,14 @@ class MainWindow(QMainWindow):
         self.raise_()
         self.activateWindow()
     
-    def display_results(self):
+    def display_results(self, duplicates, zero_byte_files):
         self.results_tree.clear()
         
-        for group_id, paths in enumerate(self.duplicates.values(), 1):
+        # Display duplicate groups
+        for group_id, paths in enumerate(duplicates.values(), 1):
             # Group header
             group = QTreeWidgetItem(self.results_tree)
-            group.setText(0, f"📁 Group {group_id} ({len(paths)} files)")
+            group.setText(0, f"📁 Duplicate Group {group_id} ({len(paths)} files)")
             font = QFont()
             font.setBold(True)
             group.setFont(0, font)
@@ -709,6 +807,22 @@ class MainWindow(QMainWindow):
                 dup.setText(2, os.path.dirname(path))
                 dup.setForeground(0, QColor(200, 0, 0))
         
+        # Display zero-byte files
+        if zero_byte_files:
+            zero_group = QTreeWidgetItem(self.results_tree)
+            zero_group.setText(0, f"⚠️ Zero-Byte Files ({len(zero_byte_files)} files)")
+            zero_group.setForeground(0, QColor(200, 0, 0))
+            font = QFont()
+            font.setBold(True)
+            zero_group.setFont(0, font)
+            
+            for path in zero_byte_files:
+                zero_item = QTreeWidgetItem(zero_group)
+                zero_item.setText(0, f"🗑️ {os.path.basename(path)}")
+                zero_item.setText(1, "0 KB")
+                zero_item.setText(2, os.path.dirname(path))
+                zero_item.setForeground(0, QColor(200, 0, 0))
+        
         self.results_tree.expandAll()
         for i in range(3):
             self.results_tree.resizeColumnToContents(i)
@@ -719,6 +833,121 @@ class MainWindow(QMainWindow):
             if os.path.exists(path):
                 QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(path))
     
+    def delete_zero_byte_files(self):
+        """Delete zero-byte files"""
+        if not self.zero_byte_files:
+            return
+        
+        total = len(self.zero_byte_files)
+        
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle("⚠️ Confirm Deletion")
+        msg.setText(f"Delete {total} zero-byte files?")
+        msg.setInformativeText(
+            "These files are empty (0 bytes) and contain no image data.\n\n"
+            "⚠️ This action cannot be undone!"
+        )
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.No)
+        msg.button(QMessageBox.Yes).setText("🗑️ Yes, Delete")
+        msg.button(QMessageBox.No).setText("❌ No, Cancel")
+        
+        if msg.exec_() != QMessageBox.Yes:
+            return
+        
+        deleted = 0
+        errors = []
+        
+        self.status_bar.showMessage("🗑️ Deleting zero-byte files...")
+        self.status_label.setText("🗑️ Deleting zero-byte files...")
+        
+        for path in self.zero_byte_files:
+            try:
+                os.remove(path)
+                deleted += 1
+            except Exception as e:
+                errors.append(f"{os.path.basename(path)}: {str(e)}")
+        
+        # Clear the list
+        self.zero_byte_files = []
+        self.delete_zero_btn.setEnabled(False)
+        
+        # Refresh results
+        self.display_results(self.duplicates, [])
+        
+        if errors:
+            QMessageBox.warning(
+                self,
+                "⚠️ Completed with Errors",
+                f"Deleted {deleted} of {total} files.\n\n"
+                f"Errors with {len(errors)} files."
+            )
+        else:
+            QMessageBox.information(
+                self,
+                "✅ Deletion Complete",
+                f"Deleted {deleted} zero-byte files!"
+            )
+        
+        self.status_bar.showMessage(f"✅ Deleted {deleted} zero-byte files")
+    
+    def clean_zero_byte_files(self):
+        """Clean zero-byte files without scanning"""
+        if not self.folder_edit.text():
+            QMessageBox.warning(
+                self,
+                "⚠️ No Folder Selected",
+                "Please select a folder first."
+            )
+            return
+        
+        # Quick scan for zero-byte files
+        folder = self.folder_edit.text()
+        zero_files = []
+        
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                filepath = os.path.join(root, file)
+                try:
+                    if os.path.getsize(filepath) == 0:
+                        zero_files.append(filepath)
+                except:
+                    continue
+        
+        if not zero_files:
+            QMessageBox.information(
+                self,
+                "✅ Clean",
+                "No zero-byte files found in this folder!"
+            )
+            return
+        
+        # Ask to delete
+        reply = QMessageBox.question(
+            self,
+            "🗑️ Delete Zero-Byte Files",
+            f"Found {len(zero_files)} zero-byte files.\n\n"
+            "Do you want to delete them?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            deleted = 0
+            for path in zero_files:
+                try:
+                    os.remove(path)
+                    deleted += 1
+                except:
+                    pass
+            
+            QMessageBox.information(
+                self,
+                "✅ Complete",
+                f"Deleted {deleted} zero-byte files!"
+            )
+    
+    # Rest of the methods remain the same...
     def delete_duplicates(self):
         if not self.duplicates:
             return
@@ -749,7 +978,6 @@ class MainWindow(QMainWindow):
         if msg.exec_() != QMessageBox.Yes:
             return
         
-        # Delete
         deleted = 0
         total_deleted = 0
         errors = []
@@ -773,7 +1001,7 @@ class MainWindow(QMainWindow):
         self.duplicates = {h: paths for h, paths in self.duplicates.items() if len(paths) > 1}
         
         if self.duplicates:
-            self.display_results()
+            self.display_results(self.duplicates, self.zero_byte_files)
         else:
             self.results_tree.clear()
             self.summary_label.setText("✅ All duplicates have been deleted!")
@@ -813,7 +1041,6 @@ class MainWindow(QMainWindow):
         if not dest:
             return
         
-        # Create duplicates folder
         dup_folder = os.path.join(dest, "duplicates_backup")
         os.makedirs(dup_folder, exist_ok=True)
         
@@ -839,13 +1066,11 @@ class MainWindow(QMainWindow):
         for paths in self.duplicates.values():
             for path in paths[1:]:
                 try:
-                    # Preserve structure
                     rel_path = os.path.relpath(path, self.folder_edit.text())
                     dest_path = os.path.join(dup_folder, rel_path)
                     dest_dir = os.path.dirname(dest_path)
                     os.makedirs(dest_dir, exist_ok=True)
                     
-                    # Handle duplicate names
                     if os.path.exists(dest_path):
                         base, ext = os.path.splitext(dest_path)
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -864,7 +1089,7 @@ class MainWindow(QMainWindow):
         self.duplicates = {h: paths for h, paths in self.duplicates.items() if len(paths) > 1}
         
         if self.duplicates:
-            self.display_results()
+            self.display_results(self.duplicates, self.zero_byte_files)
         else:
             self.results_tree.clear()
             self.summary_label.setText("✅ All duplicates have been moved!")
@@ -892,14 +1117,14 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"✅ Moved {moved} files to backup folder")
     
     def export_report(self):
-        if not self.duplicates:
-            QMessageBox.information(self, "📝 No Report", "No duplicates to report.")
+        if not self.duplicates and not self.zero_byte_files:
+            QMessageBox.information(self, "📝 No Report", "Nothing to report.")
             return
         
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "💾 Save Report",
-            f"duplicate_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            f"photo_ninja_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
             "Text Files (*.txt)"
         )
         
@@ -909,48 +1134,57 @@ class MainWindow(QMainWindow):
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write("=" * 80 + "\n")
-                f.write("🖼️ IMAGE DUPLICATE REPORT\n")
+                f.write("🥋 PHOTO NINJA - SCAN REPORT\n")
                 f.write("=" * 80 + "\n")
                 f.write(f"📅 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 f.write(f"📁 Folder: {self.folder_edit.text()}\n")
                 f.write("=" * 80 + "\n\n")
                 
-                total = sum(len(paths) - 1 for paths in self.duplicates.values())
-                total_size = 0
-                for paths in self.duplicates.values():
-                    for path in paths[1:]:
+                if self.duplicates:
+                    total = sum(len(paths) - 1 for paths in self.duplicates.values())
+                    total_size = 0
+                    for paths in self.duplicates.values():
+                        for path in paths[1:]:
+                            try:
+                                total_size += os.path.getsize(path)
+                            except:
+                                pass
+                    
+                    f.write("📊 DUPLICATE SUMMARY\n")
+                    f.write("-" * 40 + "\n")
+                    f.write(f"Duplicate groups: {len(self.duplicates)}\n")
+                    f.write(f"Duplicate files: {total}\n")
+                    f.write(f"Total size: {total_size / (1024**2):.1f} MB\n\n")
+                    
+                    f.write("📋 DUPLICATE DETAILS\n")
+                    f.write("-" * 80 + "\n\n")
+                    
+                    for idx, (h, paths) in enumerate(self.duplicates.items(), 1):
+                        f.write(f"Group {idx} (Hash: {h[:16]}...)\n")
+                        f.write("  " + "-" * 76 + "\n")
+                        f.write(f"  ✅ ORIGINAL: {paths[0]}\n")
                         try:
-                            total_size += os.path.getsize(path)
+                            f.write(f"     Size: {os.path.getsize(paths[0]) / 1024:.1f} KB\n")
                         except:
                             pass
+                        f.write(f"\n  ❌ DUPLICATES ({len(paths) - 1}):\n")
+                        for path in paths[1:]:
+                            f.write(f"    - {path}\n")
+                            try:
+                                f.write(f"      Size: {os.path.getsize(path) / 1024:.1f} KB\n")
+                            except:
+                                pass
+                        f.write("\n")
                 
-                f.write("📊 SUMMARY\n")
-                f.write("-" * 40 + "\n")
-                f.write(f"Total duplicate groups: {len(self.duplicates)}\n")
-                f.write(f"Total duplicate files: {total}\n")
-                f.write(f"Total duplicate size: {total_size / (1024**2):.1f} MB\n\n")
+                if self.zero_byte_files:
+                    f.write("\n" + "=" * 80 + "\n")
+                    f.write("🗑️ ZERO-BYTE FILES\n")
+                    f.write("-" * 40 + "\n")
+                    f.write(f"Total zero-byte files: {len(self.zero_byte_files)}\n\n")
+                    for path in self.zero_byte_files:
+                        f.write(f"  - {path}\n")
                 
-                f.write("📋 DUPLICATE DETAILS\n")
-                f.write("-" * 80 + "\n\n")
-                
-                for idx, (h, paths) in enumerate(self.duplicates.items(), 1):
-                    f.write(f"Group {idx} (Hash: {h[:16]}...)\n")
-                    f.write("  " + "-" * 76 + "\n")
-                    f.write(f"  ✅ ORIGINAL: {paths[0]}\n")
-                    try:
-                        f.write(f"     Size: {os.path.getsize(paths[0]) / 1024:.1f} KB\n")
-                    except:
-                        pass
-                    f.write(f"\n  ❌ DUPLICATES ({len(paths) - 1}):\n")
-                    for path in paths[1:]:
-                        f.write(f"    - {path}\n")
-                        try:
-                            f.write(f"      Size: {os.path.getsize(path) / 1024:.1f} KB\n")
-                        except:
-                            pass
-                    f.write("\n")
-                
-                f.write("=" * 80 + "\n")
+                f.write("\n" + "=" * 80 + "\n")
                 f.write("📌 End of report\n")
             
             QMessageBox.information(
@@ -968,15 +1202,16 @@ class MainWindow(QMainWindow):
             self,
             "About Photo Ninja",
             "🥋 Photo Ninja\n\n"
-            "Version: 2.1.1\n"
+            "Version: 2.3\n"
             "Built by GamEGanG\n\n"
-            "A simple tool to find and remove duplicate images.\n\n"
+            "A ninja-fast tool to find and remove duplicate images\n"
+            "and zero-byte files.\n\n"
             "Features:\n"
-            "• Fast scanning with image comparison\n"
-            "• Delete or move duplicates\n"
-            "• Export detailed reports\n"
-            "• User-friendly interface\n"
-            "• Fixed window management and GUI imports\n\n"
+            "• 🔍 Fast duplicate image detection\n"
+            "• 🗑️ Zero-byte file detection and removal\n"
+            "• 🎨 Dark/Light themes\n"
+            "• 📦 Safe backup before deletion\n"
+            "• 📊 Detailed reports\n\n"
             "© 2026 GamEGanG - All Rights Reserved"
         )
     
@@ -989,23 +1224,24 @@ class MainWindow(QMainWindow):
            • Choose a folder with your images
         
         2. 🔍 Start Scanning
+           • Enable/disable "Detect Zero-Byte Files"
            • Click "Start Scan" to begin
-           • Watch the progress bar
         
         3. 📊 Review Results
-           • Green = Original (kept)
-           • Red = Duplicate (to remove)
+           • Duplicate groups shown in green/red
+           • Zero-byte files shown in red
            • Double-click to open file location
         
         4. 🗑️ Take Action
-           • Delete Duplicates: Permanently remove
-           • Move Duplicates: Move to backup folder
-           • Export Report: Save detailed list
+           • "Delete Duplicates": Remove duplicate files
+           • "Delete Zero-Byte Files": Remove empty files
+           • "Move Duplicates": Move to backup folder
+           • "Export Report": Save detailed list
         
         💡 Tips:
+        • Zero-byte files are completely safe to delete
         • Use "Move Duplicates" first if unsure
         • Always review before deleting
-        • The largest/highest quality version is kept
         """
         
         QMessageBox.information(self, "📖 Help", help_text)

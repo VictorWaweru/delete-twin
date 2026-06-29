@@ -1,0 +1,163 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+; Photo Ninja - Registry Entries
+; Version: 2.2
+; "Silent. Precise. Deadly to Duplicates."
+; Built by GamEGanG
+; ============================================================
+
+; ============================================================
+; APPLICATION INFORMATION
+; ============================================================
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\GamEGanG]
+[HKEY_LOCAL_MACHINE\SOFTWARE\GamEGanG\PhotoNinja]
+"InstallPath"="C:\\Program Files\\PhotoNinja"
+"Version"="2.2.0.0"
+"DisplayName"="Photo Ninja"
+"DisplayVersion"="2.2"
+"Publisher"="GamEGanG"
+"HelpLink"="https://github.com/YOUR_USERNAME/PhotoNinja"
+"URLInfoAbout"="https://github.com/YOUR_USERNAME/PhotoNinja"
+"URLUpdateInfo"="https://github.com/YOUR_USERNAME/PhotoNinja/releases"
+"Readme"="README.md"
+"License"="LICENSE"
+"Copyright"="Copyright © 2026 GamEGanG - All Rights Reserved"
+
+; Installation date and time
+"InstallDate"=hex:00
+
+; ============================================================
+; USER SETTINGS
+; ============================================================
+
+[HKEY_CURRENT_USER\SOFTWARE\GamEGanG]
+[HKEY_CURRENT_USER\SOFTWARE\GamEGanG\PhotoNinja]
+
+; Theme preference (Light or Dark)
+"Theme"="Light"
+; Last used folder for scanning
+"LastFolder"="C:\\Users\\"
+; Auto-scan on launch (0=No, 1=Yes)
+"AutoScan"=dword:00000000
+; Auto-delete confirmation (0=Show, 1=Skip)
+"SkipConfirmation"=dword:00000000
+; Min file size in bytes
+"MinFileSize"=dword:00000000
+; Max file size in bytes
+"MaxFileSize"=dword:00000000
+; Language preference
+"Language"="en_US"
+; Window position
+"WindowX"=dword:000000C8
+"WindowY"=dword:000000C8
+"WindowWidth"=dword:00000384
+"WindowHeight"=dword:0000028A
+; Recent folders list
+"RecentFolders_1"=""
+"RecentFolders_2"=""
+"RecentFolders_3"=""
+"RecentFolders_4"=""
+"RecentFolders_5"=""
+; Export format (txt or csv)
+"ExportFormat"="txt"
+; Show tips on startup
+"ShowTips"=dword:00000001
+; First run flag
+"FirstRun"=dword:00000001
+
+; ============================================================
+; FILE ASSOCIATIONS
+; ============================================================
+
+; Associate .photoscanner with Photo Ninja
+[HKEY_CLASSES_ROOT\.photoscanner]
+@="PhotoNinja.Report"
+
+[HKEY_CLASSES_ROOT\PhotoNinja.Report]
+@="Photo Ninja Scan Report"
+
+[HKEY_CLASSES_ROOT\PhotoNinja.Report\DefaultIcon]
+@="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\",0"
+
+[HKEY_CLASSES_ROOT\PhotoNinja.Report\shell]
+[HKEY_CLASSES_ROOT\PhotoNinja.Report\shell\open]
+[HKEY_CLASSES_ROOT\PhotoNinja.Report\shell\open\command]
+@="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\" \"%1\""
+
+; Associate .photoreport with Photo Ninja
+[HKEY_CLASSES_ROOT\.photoreport]
+@="PhotoNinja.Report"
+
+; ============================================================
+; CONTEXT MENU INTEGRATION
+; ============================================================
+
+; Add to folder context menu (right-click folders)
+[HKEY_CLASSES_ROOT\Directory\shell\ScanWithPhotoNinja]
+@="Scan with Photo Ninja"
+"Icon"="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\""
+
+[HKEY_CLASSES_ROOT\Directory\shell\ScanWithPhotoNinja\command]
+@="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\" \"%1\""
+
+; Add to drive context menu (right-click drives)
+[HKEY_CLASSES_ROOT\Drive\shell\ScanWithPhotoNinja]
+@="Scan with Photo Ninja"
+"Icon"="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\""
+
+[HKEY_CLASSES_ROOT\Drive\shell\ScanWithPhotoNinja\command]
+@="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\" \"%1\""
+
+; Add to background context menu (right-click in folder)
+[HKEY_CLASSES_ROOT\Directory\Background\shell\ScanWithPhotoNinja]
+@="Scan with Photo Ninja"
+"Icon"="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\""
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\ScanWithPhotoNinja\command]
+@="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\" \"%V\""
+
+; ============================================================
+; UNINSTALL INFORMATION
+; ============================================================
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PhotoNinja]
+"DisplayName"="Photo Ninja"
+"DisplayVersion"="2.2"
+"Publisher"="GamEGanG"
+"DisplayIcon"="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\""
+"UninstallString"="\"C:\\Program Files\\PhotoNinja\\uninstall.exe\""
+"InstallLocation"="C:\\Program Files\\PhotoNinja"
+"InstallDate"=""
+"EstimatedSize"=dword:0000C350
+"HelpLink"="https://github.com/YOUR_USERNAME/PhotoNinja"
+"URLInfoAbout"="https://github.com/YOUR_USERNAME/PhotoNinja"
+"URLUpdateInfo"="https://github.com/YOUR_USERNAME/PhotoNinja/releases"
+"PublisherURL"="https://github.com/YOUR_USERNAME/PhotoNinja"
+"VersionMajor"=dword:00000002
+"VersionMinor"=dword:00000002
+"Language"=dword:00000409
+"NoModify"=dword:00000001
+"NoRepair"=dword:00000001
+
+; ============================================================
+; STARTUP OPTIONS (Optional)
+; ============================================================
+
+; Uncomment the following to add Photo Ninja to startup
+; [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
+; "PhotoNinja"="\"C:\\Program Files\\PhotoNinja\\PhotoNinja.exe\""
+
+; ============================================================
+; LOGGING & DEBUGGING (Optional)
+; ============================================================
+
+; [HKEY_LOCAL_MACHINE\SOFTWARE\GamEGanG\PhotoNinja\Debug]
+; "EnableLogging"=dword:00000000
+; "LogLevel"="Info"
+; "LogPath"="C:\\ProgramData\\GamEGanG\\PhotoNinja\\Logs"
+
+; ============================================================
+; END OF REGISTRY FILE
+; ============================================================
