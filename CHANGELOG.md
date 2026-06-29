@@ -1,6 +1,18 @@
 # Photo Ninja - Version History
 
-## Version 2.2 (Current) - 2026-06-28
+## Version 2.3 (Current) - 2026-06-29
+- **NEW: Zero-Byte File Detection** 🗑️
+  - Detect and display empty (0-byte) image files
+  - Dedicated "Delete Zero-Byte Files" button
+  - Zero-byte files shown in red in results
+  - Option to disable zero-byte detection
+  - "Clean Zero-Byte Files" tool in Tools menu
+  - Zero-byte files included in export reports
+- Enhanced summary with zero-byte file count
+- Updated UI with new controls
+- Improved status messages
+
+## Version 2.2 - 2026-06-28
 - **NEW: Dark/Light Theme System** 🎨
   - Added ThemeManager class for theme management
   - Light mode (bright, clean interface)
@@ -10,50 +22,20 @@
 - Added theme configuration file (`theme_config.txt`)
 - Fully themed UI elements (buttons, menus, tree view, status bar)
 - Application renamed to **Photo Ninja**
-- Backup file: `versions/delete_v2.2.py`
 
 ## Version 2.1.1 - 2026-06-28
 - Fixed syntax error in main() function
 - Removed accidental documentation text from code
 - Fixed exe launcher issue (removed console window)
-- Created standalone executable (ImageDuplicateScanner.exe)
-- Files: `delete.py`, `dist/ImageDuplicateScanner.exe`, `run_scanner.bat`, `run_scanner.vbs`, `launcher.py`
-- Backup file: `versions/delete_v2.1.py`
+- Created standalone executable
 
 ## Version 2.1 - 2026-06-28
 - Fixed window management and display issues
-- Added missing PyQt5 GUI imports (QFont, QColor, QIcon, QDesktopServices)
-- Improved window positioning (centers on screen)
-- Updated copyright year to 2026
-- Better error handling in scan_finished() method
-- Files: `delete.py`, `run_scanner.bat`, `run_scanner.vbs`, `launcher.py`
+- Added missing PyQt5 GUI imports
+- Improved window positioning
+- Better error handling
 
 ## Version 2.0
 - Initial working version with full duplicate detection
 - PyQt5 GUI interface
 - Delete, move, and export functionality
-- Backup file: `versions/delete_v2.0.py`
-
----
-
-## How to Use Version History
-
-1. **Latest Version**: Use `delete.py` in the main folder
-2. **Previous Versions**: Check the `versions/` folder for backups
-3. **Rolling Back**: Copy the old version from `versions/` to the main folder
-
-## File Structure
-```
-Photo Ninja/
-├── delete.py                    # Current version (v2.2)
-├── dist/ImageDuplicateScanner.exe  # Standalone executable
-├── theme_config.txt             # Theme preference storage
-├── run_scanner.bat              # Batch file launcher
-├── run_scanner.vbs              # VBS launcher
-├── launcher.py                  # Python launcher
-├── CHANGELOG.md                 # This file
-└── versions/
-    ├── delete_v2.2.py           # Version 2.2 backup (current)
-    ├── delete_v2.1.py           # Version 2.1 backup
-    └── delete_v2.0.py           # Version 2.0 backup
-```

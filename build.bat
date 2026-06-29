@@ -1,12 +1,14 @@
 @echo off
-echo 🚀 Building Image Duplicate Scanner...
+echo 🥷 Building Photo Ninja...
+echo Version: 2.3
+echo "Silent. Precise. Deadly to Duplicates."
 echo.
-
-REM Install PyInstaller if not installed
+echo 📦 Installing PyInstaller...
 pip install pyinstaller
 
-REM Build the executable
-pyinstaller --onefile --windowed --name="ImageCleaner" image_cleaner.py
+echo.
+echo 🔨 Building executable...
+pyinstaller --onefile --windowed --name="PhotoNinja" --icon=app.ico delete.py
 
 echo.
 echo ✅ Build complete!

@@ -296,7 +296,29 @@ A: Source code will, but `.exe` is Windows-only. Install Python and run `python 
 - Report bugs or request features
 - Suggest improvements
 - Share your experience
+## 🗑️ Zero-Byte File Detection
 
+Photo Ninja now detects and helps you remove empty (0-byte) image files!
+
+### Features:
+- **Automatic Detection**: Finds zero-byte files during scan
+- **Visual Indicators**: Zero-byte files shown in red in results
+- **Dedicated Delete Button**: Remove all zero-byte files with one click
+- **Safe Operation**: Preview before deletion
+- **Optional Detection**: Toggle on/off in controls
+- **Quick Clean**: Tools menu option to clean zero-byte files without full scan
+
+### Why Delete Zero-Byte Files?
+- They take up no space but clutter your folders
+- They can cause issues with photo viewing software
+- They're completely safe to delete
+- They often result from failed downloads or transfers
+
+### How to Use:
+1. Check "Detect Zero-Byte Files" option
+2. Start scan
+3. Zero-byte files appear in red
+4. Click "Delete Zero-Byte Files" to remove them
 ---
 
 ## 📄 License
